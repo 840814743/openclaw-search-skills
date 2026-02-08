@@ -1,131 +1,147 @@
-# OpenClaw Skills
+# OpenClaw Search Skills
 
-A collection of [OpenClaw](https://github.com/openclaw/openclaw) skills for deep research and content extraction.
+一组 [OpenClaw](https://github.com/openclaw/openclaw) 技能（Skills），用于 **GitHub 项目深度调研** 和 **多源内容提取**。
 
-## What's Inside
+## 包含什么
 
-| Skill | What it does |
-|-------|-------------|
-| **[github-explorer](./github-explorer/)** | Say "帮我看看这个项目" and get a full due-diligence report — stars, issues, competitors, community buzz, and an honest opinion. |
-| **[search-layer](./search-layer/)** | Multi-source search (Exa + Tavily) with dedup. Brave is handled by OpenClaw's built-in `web_search`. |
-| **[content-extract](./content-extract/)** | URL → clean Markdown. Handles anti-bot sites (WeChat, Zhihu) by falling back to MinerU when `web_fetch` gets blocked. |
-| **[mineru-extract](./mineru-extract/)** | Low-level wrapper for the [MinerU](https://mineru.net) parsing API. Turns PDFs, Office docs, and HTML pages into Markdown. |
+| Skill | 干什么的 |
+|-------|---------|
+| **[github-explorer](./github-explorer/)** | 对你说"帮我看看这个项目"，就能拿到一份完整的尽职调查报告——Stars、Issues、竞品、社区口碑、以及一段主观判断。 |
+| **[search-layer](./search-layer/)** | 多源搜索（Exa + Tavily）+ 自动去重。Brave 由 OpenClaw 内置的 `web_search` 提供。 |
+| **[content-extract](./content-extract/)** | URL → 干净的 Markdown。遇到反爬站点（微信、知乎）自动降级到 MinerU 解析。 |
+| **[mineru-extract](./mineru-extract/)** | [MinerU](https://mineru.net) 官方 API 的封装层。把 PDF、Office 文档、HTML 页面转成 Markdown。 |
 
-## How They Fit Together
+## 它们之间的关系
 
 ```
-github-explorer (the brain)
-├── search-layer ──── Exa + Tavily parallel search
-├── content-extract ── smart URL → Markdown
-│   └── mineru-extract ── MinerU API (heavy lifting)
-└── OpenClaw built-ins ── web_search, web_fetch, browser
+github-explorer（总控大脑）
+├── search-layer ──── Exa + Tavily 并行搜索
+├── content-extract ── 智能 URL → Markdown
+│   └── mineru-extract ── MinerU API（重活）
+└── OpenClaw 内置工具 ── web_search, web_fetch, browser
 ```
 
-`github-explorer` is the main skill you interact with. The others are its plumbing — you can also use them standalone.
+`github-explorer` 是你直接交互的 skill，其他三个是它的管道——当然你也可以单独使用它们。
 
-## Quick Start
+## 安装
 
-### 1. Clone the repo (anywhere) and link skills into your OpenClaw skills dir
+### 方式一：让 OpenClaw 帮你装（推荐 🚀）
 
-> Your OpenClaw skills directory may vary by setup. A common one is: `~/.openclaw/workspace/skills/`.
+直接在对话里告诉你的 OpenClaw agent：
+
+> 帮我安装这个 skill：https://github.com/blessonism/openclaw-search-skills
+
+agent 会自动 clone 仓库并把 skill 链接到正确的位置。
+
+### 方式二：用 ClawHub CLI
+
+如果这些 skill 已发布到 [ClawHub](https://clawhub.com)：
 
 ```bash
-mkdir -p ~/.openclaw/workspace/_repos
-git clone https://github.com/blessonism/openclaw-search-skills.git ~/.openclaw/workspace/_repos/openclaw-skills
+npx clawhub install github-explorer
+npx clawhub install search-layer
+npx clawhub install content-extract
+npx clawhub install mineru-extract
+```
 
-mkdir -p ~/.openclaw/workspace/skills
+### 方式三：手动安装
+
+```bash
+# 1. Clone 到任意位置
+mkdir -p ~/.openclaw/workspace/_repos
+git clone https://github.com/blessonism/openclaw-search-skills.git \
+  ~/.openclaw/workspace/_repos/openclaw-search-skills
+
+# 2. 链接到你的 skills 目录
 cd ~/.openclaw/workspace/skills
 
-ln -s ~/.openclaw/workspace/_repos/openclaw-skills/github-explorer github-explorer
-ln -s ~/.openclaw/workspace/_repos/openclaw-skills/search-layer search-layer
-ln -s ~/.openclaw/workspace/_repos/openclaw-skills/content-extract content-extract
-ln -s ~/.openclaw/workspace/_repos/openclaw-skills/mineru-extract mineru-extract
+ln -s ~/.openclaw/workspace/_repos/openclaw-search-skills/github-explorer github-explorer
+ln -s ~/.openclaw/workspace/_repos/openclaw-search-skills/search-layer search-layer
+ln -s ~/.openclaw/workspace/_repos/openclaw-search-skills/content-extract content-extract
+ln -s ~/.openclaw/workspace/_repos/openclaw-search-skills/mineru-extract mineru-extract
 ```
 
-If you prefer copying instead of symlinks:
+> 💡 你的 skills 目录可能因安装方式不同而不同，常见的是 `~/.openclaw/workspace/skills/` 或 `~/.openclaw/skills/`。
 
-```bash
-cp -r ~/.openclaw/workspace/_repos/openclaw-skills/github-explorer ~/.openclaw/workspace/skills/
-cp -r ~/.openclaw/workspace/_repos/openclaw-skills/search-layer ~/.openclaw/workspace/skills/
-cp -r ~/.openclaw/workspace/_repos/openclaw-skills/content-extract ~/.openclaw/workspace/skills/
-cp -r ~/.openclaw/workspace/_repos/openclaw-skills/mineru-extract ~/.openclaw/workspace/skills/
-```
+## 配置
 
-### 2. Configure API keys
+### 搜索 API Keys（search-layer 需要）
 
-**Search (for search-layer)** — set env vars or add to your `TOOLS.md`:
+两种方式任选其一：
+
+**环境变量：**
 
 ```bash
 export EXA_API_KEY="your-exa-key"        # https://exa.ai
 export TAVILY_API_KEY="your-tavily-key"  # https://tavily.com
 ```
 
-Or in `TOOLS.md` (OpenClaw workspace root):
+**或写到 TOOLS.md（OpenClaw workspace 根目录）：**
+
 ```markdown
 ### Search
 - **Exa**: `your-exa-key`
 - **Tavily**: `your-tavily-key`
 ```
 
-**MinerU (for content-extract / mineru-extract)** — optional, only needed for anti-bot site extraction:
+### MinerU Token（可选，content-extract 需要）
+
+只有当你需要抓取微信/知乎/小红书等反爬站点时才需要：
 
 ```bash
 cp mineru-extract/.env.example mineru-extract/.env
-# Edit .env and add your MinerU token from https://mineru.net/apiManage
+# 编辑 .env，填入你的 MinerU token（从 https://mineru.net/apiManage 获取）
 ```
 
-### 3. Install Python dependency
+### Python 依赖
 
 ```bash
-pip install requests  # only external dependency
+pip install requests  # 唯一的外部依赖
 ```
 
-### 4. Use it
+## 使用
 
-Tell your OpenClaw agent:
+直接在对话里说：
 
-> "帮我看看 LightRAG 这个项目"
+> "帮我看看这个 GitHub 项目 raganything"
 
-Or in English:
+> "分析一下 HKUDS/LightRAG"
 
-> "Analyze the GitHub project raganything"
+agent 会自动读取 `github-explorer/SKILL.md`，启动多源调研流水线，输出结构化报告。
 
-The agent reads `github-explorer/SKILL.md`, kicks off the multi-source research pipeline, and delivers a structured report.
+### 单独使用各 skill
 
-## Using Skills Individually
-
-### search-layer
+**search-layer：**
 
 ```bash
 python3 search-layer/scripts/search.py "RAG framework comparison" --mode deep --num 5
 ```
 
-Modes: `fast` (Exa only), `deep` (Exa + Tavily parallel), `answer` (Tavily with AI summary).
+模式：`fast`（仅 Exa）、`deep`（Exa + Tavily 并行）、`answer`（Tavily 带 AI 摘要）
 
-### content-extract
+**content-extract：**
 
 ```bash
 python3 content-extract/scripts/content_extract.py --url "https://mp.weixin.qq.com/s/some-article"
 ```
 
-Returns JSON with `ok`, `markdown`, `sources`.
-
-### mineru-extract
+**mineru-extract：**
 
 ```bash
 python3 mineru-extract/scripts/mineru_extract.py "https://example.com/paper.pdf" --model pipeline --print
 ```
 
-## Requirements
+## 环境要求
 
-- [OpenClaw](https://github.com/openclaw/openclaw) (the agent runtime)
+- [OpenClaw](https://github.com/openclaw/openclaw)（agent 运行时）
 - Python 3.10+
-- `requests` (pip install)
-- API keys: Exa and/or Tavily (for search-layer), MinerU token (optional, for content-extract)
+- `requests`（pip install）
+- API Keys：Exa 和/或 Tavily（用于 search-layer），MinerU token（可选，用于 content-extract）
 
-## Example Output
+<details>
+<summary><b>📋 效果展示（点击展开）</b></summary>
 
-Here's a real report generated by `github-explorer` when asked to analyze [RAG-Anything](https://github.com/HKUDS/RAG-Anything) (lightly trimmed for length):
+以下是 `github-explorer` 分析 [RAG-Anything](https://github.com/HKUDS/RAG-Anything) 时的真实输出（略有精简）：
 
 ---
 
@@ -176,7 +192,9 @@ Here's a real report generated by `github-explorer` when asked to analyze [RAG-A
 
 ---
 
-> ☝️ This is a real, unedited output. Every link is clickable and traceable to its source.
+> ☝️ 以上是真实、未经编辑的输出。每个链接都可点击、可追溯到原始来源。
+
+</details>
 
 ## License
 
